@@ -1,0 +1,3 @@
+[submodule "OpenAIClients"]
+	path = OpenAIClients
+	url = git@github.com:StasDzundza/OpenAIClients.git
