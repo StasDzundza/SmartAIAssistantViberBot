@@ -36,7 +36,11 @@ keyboard_template = {
 }
 
 BUTTONS_KEY = "Buttons"
-BUTTON_ACTIONS = ["__help__", "__cancel__", "__set_api_key__", "__start_chat__", "__end_chat__", "__generate_image__"]
+ROLE_BUTTON_ACTIONS = ["__chatbot_role__", "__cook_role__", "__doctor_role__", "__professional_sportsmen_role__", "__scientist_role__", "__funny_guy_role__"]
+IMAGE_COUNT_BUTTON_ACTIONS = ["__1__", "__2__", "__3__", "__4__"]
+IMAGE_COUNT_BUTTON_ACTIONS = ["__small__", "__medium__", "__large__"]
+BUTTON_ACTIONS = ["__help__", "__cancel__", "__set_api_key__", "__start_chat__", "__end_chat__", "__generate_image__"] + \
+    ROLE_BUTTON_ACTIONS + IMAGE_COUNT_BUTTON_ACTIONS + IMAGE_COUNT_BUTTON_ACTIONS
 
 def append_buttons(keyboard: dict, buttons: list[dict]) -> dict:
     extended_keyboard = copy.deepcopy(keyboard)
@@ -91,9 +95,9 @@ IMAGE_COUNT_KEYBOARD[BUTTONS_KEY].extend([
 
 IMAGE_SIZE_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 IMAGE_SIZE_KEYBOARD[BUTTONS_KEY].extend([
-    { "ActionType": "reply", "ActionBody": "__1__", "Text": "Small" },
-    { "ActionType": "reply", "ActionBody": "__2__", "Text": "Medium" },
-    { "ActionType": "reply", "ActionBody": "__3__", "Text": "Large" }
+    { "ActionType": "reply", "ActionBody": "__small__", "Text": "Small" },
+    { "ActionType": "reply", "ActionBody": "__medium__", "Text": "Medium" },
+    { "ActionType": "reply", "ActionBody": "__large__", "Text": "Large" }
 ])
 
 keyboard = {

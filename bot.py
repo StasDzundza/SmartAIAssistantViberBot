@@ -15,8 +15,8 @@ import keyboards
 
 from OpenAIClients.ChatGPT.chat_gpt_client import ChatGPTClient, TextDavinciClient
 from OpenAIClients.DALLE.dalle_client import DALLEClient, ImageRequestData, ImageSize
-from OpenAIClients.WhisperClient.whisper_client import WhisperClient
 from DBService.db_service import UserDataDatabaseService
+from chat_state import ChatState
 
 from flask import Flask, request, Response
 from viberbot import Api
@@ -61,15 +61,9 @@ class ViberBot:
         keyboard_message = KeyboardMessage(keyboard=extended_keyboard)
         viber.send_messages(user_id, [keyboard_message])
 
-    def _handle_conversation_started_request(self, request: ViberConversationStartedRequest):
+    def _send_initial_message(self, request: ViberConversationStartedRequest | ViberSubscribedRequest):
         user_id = request.user.id
-        logger.info(f"_handle_subscribed_request called for User {user_id}")
-
-        viber.send_messages(user_id, [TextMessage(text=constants.WELCOME_USER_MESSAGE)])
-
-    def _handle_subscribed_request(self, request: ViberSubscribedRequest):
-        user_id = request.user.id
-        logger.info(f"_handle_subscribed_request called for User {user_id}")
+        logger.info(f"_send_initial_message called for User {user_id}")
 
         reply_message = constants.WELCOME_USER_MESSAGE
         keyboard = keyboards.MAIN_KEYBOARD
@@ -80,6 +74,14 @@ class ViberBot:
         viber.send_messages(user_id, [TextMessage(text=reply_message)])
         self._send_keyboard(user_id, keyboard)
 
+    def _handle_conversation_started_request(self, request: ViberConversationStartedRequest):
+        logger.info(f"_handle_subscribed_request called for User {request.user.id}")
+        self._send_initial_message(request)
+
+    def _handle_subscribed_request(self, request: ViberSubscribedRequest):
+        logger.info(f"_handle_subscribed_request called for User {request.user.id}")
+        self._send_initial_message(request)
+
     def _handle_unsubscribed_request(self, request: ViberUnsubscribedRequest):
         logger.info(f"User {request.user_id} unsubscribed.")
 
@@ -88,17 +90,67 @@ class ViberBot:
 
     def _handle_message_request(self, request: ViberMessageRequest):
         message = request.message.text
+        user_id = request.sender.id
         logger.info(f'Received message "{message}" from User {request.sender.id}.')
-        print(f'Received message "{message}" from User {request.sender.id}.')
 
-        if message == 'One':
-            response_text = 'Hello 1'
-        elif message == 'Two':
-            response_text = 'Hello 2'
+        if message in keyboards.BUTTON_ACTIONS:
+            self._handle_keyboard_button_click(request)
         else:
-            response_text = message
-        viber.send_messages(to=request.sender.id, messages=[TextMessage(text=response_text)])
-        self._send_keyboard(request.sender.id, keyboards.MAIN_KEYBOARD)
+            api_key = self._get_openai_api_key(user_id)
+            chat_state = self._user_data_db.get_chat_state(user_id)
+            if not chat_state: chat_state = ChatState.MAIN
+            
+            if chat_state == ChatState.MAIN:
+                if api_key:
+                    viber.send_messages(user_id, [TextMessage(text=constants.ASSISTANT_IS_ANSWERING_MESSAGE)])
+                    answer = TextDavinciClient.ask_question(api_key, message)
+                    viber.send_messages(user_id, [TextMessage(text=answer)])
+                else:
+                    viber.send_messages(user_id, [TextMessage(text=constants.API_KEY_REQUEST_MESSAGE)])
+                    self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+
+                response_text = message
+                viber.send_messages(user_id, [TextMessage(text=response_text)])
+                self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+
+            elif chat_state == ChatState.PROVIDING_API_KEY:
+                api_key = message
+                self._user_data_db.store_api_key(user_id, api_key)
+                viber.send_messages(user_id, [TextMessage(text=constants.API_KEY_SET_SUCCESSFULLY_MESSAGE)])
+                self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+                self._user_data_db.set_chat_state(user_id, ChatState.MAIN.value)
+
+            elif chat_state == ChatState.HAVING_CONVERSATION_WITH_ASSISTANT:
+                pass
+
+            elif chat_state == ChatState.PROVIDING_IMAGES_DESCRIPTION:
+                pass
+
+
+    def _handle_keyboard_button_click(self, request: ViberMessageRequest):
+        message = request.message.text
+        user_id = request.sender.id
+        logger.info(f'_handle_keyboard_button_click for User {request.sender.id}.')
+
+        api_key = self._get_openai_api_key(user_id)
+
+        if message == keyboards.HELP_BUTTON.ActionBody:
+            viber.send_messages(user_id, [TextMessage(text=constants.HELP_MESSAGE)])
+
+        elif message == keyboards.CANCEL_BUTTON.ActionBody:
+            self._user_data_db.set_chat_state(user_id, ChatState.MAIN.value)
+            if api_key:
+                self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+            else:
+                self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+
+        elif message == keyboards.SET_API_KEY_BUTTON.ActionBody:
+            viber.send_messages(user_id, [TextMessage(text=constants.PLEASE_SEND_API_KEY_MESSAGE)])
+            self._send_keyboard(user_id, keyboards.CANCEL_KEYBOARD)
+            self._user_data_db.set_chat_state(user_id, ChatState.PROVIDING_API_KEY.value)
+        
+        else:
+            viber.send_messages(user_id, [TextMessage(text="not supported")])
 
 
 app = Flask(__name__)

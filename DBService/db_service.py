@@ -26,6 +26,13 @@ class UserDataDatabaseService:
         connection.commit()
         connection.close()
 
+    def add_user(self, user_id: str):
+        connection = sqlite3.connect(self._db_name)
+        cursor = connection.cursor()
+        cursor.execute("INSERT OR REPLACE INTO user_data (user_id) VALUES (?)", (user_id))
+        connection.commit()
+        connection.close()
+
     def get_api_key(self, user_id: str) -> str:
         encrypted_api_key = self._get_table_field(user_id, 'api_key')
 
