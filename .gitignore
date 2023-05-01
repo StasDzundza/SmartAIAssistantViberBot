@@ -130,3 +130,17 @@ dmypy.json
 
 # Config files
 viber.json
+
+# Databases
+*.db
+
+# Media files
+*.mp3
+*.mp4
+*.wav
+*.ogg
+*.oga
+*.m4a
+*.webm
+*.mpga
+*.mpeg

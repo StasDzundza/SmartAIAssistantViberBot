@@ -11,7 +11,7 @@ CHAT_CLIENT = "chat_client"
 
 # Predefinded messages
 BOT_MENU_HELP_MESSAGE = "For more details see Help section."
-WELCOME_USER_MESSAGE = "Welcome to the ChatGPT Telegram bot! Ask me something or go to menu in order to use extended list of features. " + BOT_MENU_HELP_MESSAGE
+WELCOME_USER_MESSAGE = "Welcome to the Smart Assistant Viber bot! Ask me something or go to menu in order to use extended list of features. " + BOT_MENU_HELP_MESSAGE
 # API Key
 PLEASE_SEND_API_KEY_MESSAGE = "Please send me your OpenAI API key. Use Help menu button in order to get info about how to get it."
 API_KEY_REQUEST_MESSAGE = "Please provide me with your OpenAI API key via bot menu in order to use bot functionality."
