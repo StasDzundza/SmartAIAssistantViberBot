@@ -16,7 +16,7 @@ import keyboards
 from OpenAIClients.ChatGPT.chat_gpt_client import ChatGPTClient, TextDavinciClient
 from OpenAIClients.DALLE.dalle_client import DALLEClient, ImageRequestData, ImageSize
 from OpenAIClients.WhisperClient.whisper_client import WhisperClient
-from OpenAIClients.DBService.db_service import ApiKeysDatabaseService
+from DBService.db_service import UserDataDatabaseService
 
 from flask import Flask, request, Response
 from viberbot import Api
@@ -32,16 +32,15 @@ class ViberBot:
         db_encryption_key = os.getenv(constants.API_KEYS_DB_ENCRYPTION_KEY_ENV)
         if not db_encryption_key:
             logger.error("API_KEYS_DB_ENCRYPTION_KEY_ENV was not found in environment variables")
-        self._api_keys_db = ApiKeysDatabaseService(db_encryption_key, "api_keys.db")
+        self._user_data_db = UserDataDatabaseService(db_encryption_key, "user_data.db")
         self._init_handlers()
 
     def _init_handlers(self):
         pass
 
     def _get_openai_api_key(self, user_id: str) -> str | None:
-        # api_key = self._api_keys_db.get_api_key(user_id)
-        # return api_key.strip() if api_key else None
-        return user_id
+        api_key = self._user_data_db.get_api_key(user_id)
+        return api_key.strip() if api_key else None
 
     def handle_request(self, request_data: bytes):
         viber_request = viber.parse_request(request_data)
@@ -66,7 +65,7 @@ class ViberBot:
         user_id = request.user.id
         logger.info(f"_handle_subscribed_request called for User {user_id}")
 
-        viber.send_messages(request.user.id, [TextMessage(text=constants.WELCOME_USER_MESSAGE)])
+        viber.send_messages(user_id, [TextMessage(text=constants.WELCOME_USER_MESSAGE)])
 
     def _handle_subscribed_request(self, request: ViberSubscribedRequest):
         user_id = request.user.id
