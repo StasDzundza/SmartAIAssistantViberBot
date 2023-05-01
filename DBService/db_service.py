@@ -14,8 +14,8 @@ class UserDataDatabaseService:
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS user_data (
-                user_id TEXT,
-                api_key TEXT,
+                user_id TEXT NOT NULL,
+                api_key TEXT DEFAULT NULL,
                 chat_state INTEGER DEFAULT 1,
                 img_description TEXT DEFAULT 'Empty',
                 img_count INTEGER DEFAULT 1
@@ -26,17 +26,19 @@ class UserDataDatabaseService:
         connection.commit()
         connection.close()
 
-    def add_user(self, user_id: str):
+    def _add_user_if_not_exists(self, user_id: str):
         connection = sqlite3.connect(self._db_name)
         cursor = connection.cursor()
-        cursor.execute("INSERT OR REPLACE INTO user_data (user_id) VALUES (?)", (user_id))
+        cursor.execute(f"INSERT OR IGNORE INTO user_data (user_id) VALUES (?)", (user_id,))
         connection.commit()
         connection.close()
 
     def get_api_key(self, user_id: str) -> str:
+        self._add_user_if_not_exists(user_id)
         encrypted_api_key = self._get_table_field(user_id, 'api_key')
-
-        if encrypted_api_key:
+        print("encrypted_api_key received: ")
+        print(encrypted_api_key)
+        if encrypted_api_key and encrypted_api_key[0]:
             decrypted_api_key = self._fernet.decrypt(encrypted_api_key[0].encode()).decode()
             return decrypted_api_key
         else:
@@ -44,17 +46,7 @@ class UserDataDatabaseService:
 
     def store_api_key(self, user_id: str, api_key: str):
         encrypted_api_key = self._fernet.encrypt(api_key.encode()).decode()
-
-        connection = sqlite3.connect(self._db_name)
-        cursor = connection.cursor()
-
-        cursor.execute(
-            "INSERT OR REPLACE INTO user_data (user_id, api_key) VALUES (?, ?)",
-            (user_id, encrypted_api_key)
-        )
-
-        connection.commit()
-        connection.close()
+        self._set_table_field(user_id, 'api_key', encrypted_api_key)
 
     def get_chat_state(self, user_id: str) -> int | None:
         return self._get_table_field(user_id, 'chat_state')
@@ -75,14 +67,19 @@ class UserDataDatabaseService:
         self._set_table_field(user_id, 'img_count', img_count)
 
     def _get_table_field(self, user_id: str, field: str):
+        self._add_user_if_not_exists(user_id)
+    
         connection = sqlite3.connect(self._db_name)
         cursor = connection.cursor()
-        cursor.execute(f"SELECT {field} FROM user_data WHERE user_id={user_id}")
+        cursor.execute(f"SELECT {field} FROM user_data WHERE user_id = ?", (user_id,))
         field_data = cursor.fetchone()
         connection.close()
+
         return field_data
-    
+
     def _set_table_field(self, user_id: str, field: str, value):
+        self._add_user_if_not_exists(user_id)
+
         connection = sqlite3.connect(self._db_name)
         cursor = connection.cursor()
         cursor.execute(f"UPDATE user_data SET {field} = ? WHERE user_id = ?", (value, user_id))

@@ -37,7 +37,7 @@ SOMETHING_WENT_WRONG_MESSAGE = "Something went wrong."
 TRY_AGAIN_MESSAGE = "An error occurred. Please try again."
 # Help
 HELP_MESSAGE = '''
-1. In order to use bot functionality you need to provide bot with your OpenAI API Key. Read the following article if you need to know how and where to get it: <a href="https://www.awesomescreenshot.com/blog/knowledge/chat-gpt-api#How-do-I-get-an-API-key-for-Chat-GPT%3F">How to get OpenAI API Key?</a>
+1. In order to use bot functionality you need to provide bot with your OpenAI API Key. Read the following article if you need to know how and where to get it: [How to get OpenAI API Key?](https://www.awesomescreenshot.com/blog/knowledge/chat-gpt-api#How-do-I-get-an-API-key-for-Chat-GPT%3F")
 If you already have an API key that provide bot with it using `Set API Key` menu button.
 2. After setting OpenAI API Key you will unlock access to the next features:
     - Communication with AI assistant

@@ -47,30 +47,32 @@ def append_buttons(keyboard: dict, buttons: list[dict]) -> dict:
     extended_keyboard[BUTTONS_KEY].extend(buttons)
     return extended_keyboard
 
+def get_button_action(button: dict):
+    return button["ActionBody"]
+
 EMPTY_KEYBOARD = {
     "Type": "keyboard",
+    "InputFieldState": "regular",
     BUTTONS_KEY: []
 }
 
 HELP_BUTTON = { "ActionType": "reply", "ActionBody": "__help__", "Text": "Help ℹ️" }
 SET_API_KEY_BUTTON = { "ActionType": "reply", "ActionBody": "__set_api_key__", "Text": "Set API Key 🔑" }
 CANCEL_BUTTON = { "ActionType": "reply", "ActionBody": "__cancel__", "Text": "Cancel ❌" }
+START_CHAT_BUTTON = { "ActionType": "reply", "ActionBody": "__start_chat__", "Text": "Start Chat With Assistant 💬" }
+GENERATE_IMAGE_BUTTON = { "ActionType": "reply", "ActionBody": "__generate_image__", "Text": "Generate Image 🖼️" }
 
 HELP_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 HELP_KEYBOARD[BUTTONS_KEY].append(HELP_BUTTON)
 
 SET_API_KEY_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
-SET_API_KEY_KEYBOARD[BUTTONS_KEY].append(SET_API_KEY_KEYBOARD)
+SET_API_KEY_KEYBOARD[BUTTONS_KEY].append(SET_API_KEY_BUTTON)
 
 CANCEL_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 CANCEL_KEYBOARD[BUTTONS_KEY].append(CANCEL_BUTTON)
 
 MAIN_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
-MAIN_KEYBOARD[BUTTONS_KEY].extend([
-    { "ActionType": "reply", "ActionBody": "__start_chat__", "Text": "Start Chat With Assistant 💬" },
-    { "ActionType": "reply", "ActionBody": "__generate_image__", "Text": "Generate Image 🖼️" },
-    SET_API_KEY_BUTTON
-])
+MAIN_KEYBOARD[BUTTONS_KEY].extend([START_CHAT_BUTTON, GENERATE_IMAGE_BUTTON, SET_API_KEY_BUTTON])
 
 END_CHAT_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 END_CHAT_KEYBOARD[BUTTONS_KEY].append({"ActionType": "reply", "ActionBody": "__end_chat__", "Text": "End Chat ❌" })
@@ -83,6 +85,7 @@ ASSISTANT_ROLES_KEYBOARD[BUTTONS_KEY].extend([
     { "ActionType": "reply", "ActionBody": "__professional_sportsmen_role__", "Text": "Professional sportsmen 🏆" },
     { "ActionType": "reply", "ActionBody": "__scientist_role__", "Text": "Scientist 👨‍🔬" },
     { "ActionType": "reply", "ActionBody": "__funny_guy_role__", "Text": "Funny guy 😂" },
+    CANCEL_BUTTON
 ])
 
 IMAGE_COUNT_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
@@ -90,14 +93,16 @@ IMAGE_COUNT_KEYBOARD[BUTTONS_KEY].extend([
     { "ActionType": "reply", "ActionBody": "__1__", "Text": "1️⃣" },
     { "ActionType": "reply", "ActionBody": "__2__", "Text": "2️⃣" },
     { "ActionType": "reply", "ActionBody": "__3__", "Text": "3️⃣" },
-    { "ActionType": "reply", "ActionBody": "__4__", "Text": "4️⃣" }
+    { "ActionType": "reply", "ActionBody": "__4__", "Text": "4️⃣" },
+    CANCEL_BUTTON
 ])
 
 IMAGE_SIZE_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 IMAGE_SIZE_KEYBOARD[BUTTONS_KEY].extend([
     { "ActionType": "reply", "ActionBody": "__small__", "Text": "Small" },
     { "ActionType": "reply", "ActionBody": "__medium__", "Text": "Medium" },
-    { "ActionType": "reply", "ActionBody": "__large__", "Text": "Large" }
+    { "ActionType": "reply", "ActionBody": "__large__", "Text": "Large" },
+    CANCEL_BUTTON
 ])
 
 keyboard = {

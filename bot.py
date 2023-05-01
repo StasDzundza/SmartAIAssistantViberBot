@@ -33,10 +33,13 @@ class ViberBot:
         if not db_encryption_key:
             logger.error("API_KEYS_DB_ENCRYPTION_KEY_ENV was not found in environment variables")
         self._user_data_db = UserDataDatabaseService(db_encryption_key, "user_data.db")
-        self._init_handlers()
 
-    def _init_handlers(self):
-        pass
+    def _get_chat_state(self, user_id: str) -> ChatState:
+        chat_state_value = self._user_data_db.get_chat_state(user_id)
+        return ChatState(chat_state_value)
+    
+    def _set_chat_state(self, user_id: str, chat_state: ChatState):
+        self._user_data_db.set_chat_state(user_id, chat_state.value[0])
 
     def _get_openai_api_key(self, user_id: str) -> str | None:
         api_key = self._user_data_db.get_api_key(user_id)
@@ -56,10 +59,12 @@ class ViberBot:
         elif isinstance(viber_request, ViberFailedRequest):
             self._handle_failed_request(viber_request)
 
-    def _send_keyboard(self, user_id: str, keyboard: dict):
+    def _send_keyboard(self, user_id: str, keyboard: dict, message: str = ''):
         extended_keyboard = keyboards.append_buttons(keyboard, [keyboards.HELP_BUTTON])
+        text_message = TextMessage(text=message)
         keyboard_message = KeyboardMessage(keyboard=extended_keyboard)
-        viber.send_messages(user_id, [keyboard_message])
+        messages = [text_message, keyboard_message] if len(message) > 0 else [keyboard_message]
+        viber.send_messages(user_id, messages)
 
     def _send_initial_message(self, request: ViberConversationStartedRequest | ViberSubscribedRequest):
         user_id = request.user.id
@@ -91,34 +96,32 @@ class ViberBot:
     def _handle_message_request(self, request: ViberMessageRequest):
         message = request.message.text
         user_id = request.sender.id
-        logger.info(f'Received message "{message}" from User {request.sender.id}.')
+        logger.info(f'Received message "{message}" from User {user_id}.')
 
         if message in keyboards.BUTTON_ACTIONS:
             self._handle_keyboard_button_click(request)
         else:
             api_key = self._get_openai_api_key(user_id)
-            chat_state = self._user_data_db.get_chat_state(user_id)
+            chat_state = self._get_chat_state(user_id)
             if not chat_state: chat_state = ChatState.MAIN
-            
+            logger.info(f"User's {user_id} chat state is {chat_state}.")
+
             if chat_state == ChatState.MAIN:
                 if api_key:
                     viber.send_messages(user_id, [TextMessage(text=constants.ASSISTANT_IS_ANSWERING_MESSAGE)])
                     answer = TextDavinciClient.ask_question(api_key, message)
                     viber.send_messages(user_id, [TextMessage(text=answer)])
+                    bot._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
                 else:
                     viber.send_messages(user_id, [TextMessage(text=constants.API_KEY_REQUEST_MESSAGE)])
                     self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
-
-                response_text = message
-                viber.send_messages(user_id, [TextMessage(text=response_text)])
-                self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
 
             elif chat_state == ChatState.PROVIDING_API_KEY:
                 api_key = message
                 self._user_data_db.store_api_key(user_id, api_key)
                 viber.send_messages(user_id, [TextMessage(text=constants.API_KEY_SET_SUCCESSFULLY_MESSAGE)])
                 self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
-                self._user_data_db.set_chat_state(user_id, ChatState.MAIN.value)
+                self._set_chat_state(user_id, ChatState.MAIN)
 
             elif chat_state == ChatState.HAVING_CONVERSATION_WITH_ASSISTANT:
                 pass
@@ -134,23 +137,36 @@ class ViberBot:
 
         api_key = self._get_openai_api_key(user_id)
 
-        if message == keyboards.HELP_BUTTON.ActionBody:
+        if message == keyboards.get_button_action(keyboards.HELP_BUTTON):
             viber.send_messages(user_id, [TextMessage(text=constants.HELP_MESSAGE)])
-
-        elif message == keyboards.CANCEL_BUTTON.ActionBody:
-            self._user_data_db.set_chat_state(user_id, ChatState.MAIN.value)
             if api_key:
                 self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
             else:
                 self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
 
-        elif message == keyboards.SET_API_KEY_BUTTON.ActionBody:
+        elif message == keyboards.get_button_action(keyboards.CANCEL_BUTTON):
+            self._set_chat_state(user_id, ChatState.MAIN)
+            if api_key:
+                self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+            else:
+                self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+
+        elif message == keyboards.get_button_action(keyboards.SET_API_KEY_BUTTON):
             viber.send_messages(user_id, [TextMessage(text=constants.PLEASE_SEND_API_KEY_MESSAGE)])
             self._send_keyboard(user_id, keyboards.CANCEL_KEYBOARD)
-            self._user_data_db.set_chat_state(user_id, ChatState.PROVIDING_API_KEY.value)
-        
+            self._set_chat_state(user_id, ChatState.PROVIDING_API_KEY)
+
+        elif api_key:
+            if message == keyboards.get_button_action(keyboards.START_CHAT_BUTTON):
+                viber.send_messages(user_id, [TextMessage(text=constants.ASSISTANT_ROLE_REQUEST_MESSAGE)])
+                self._send_keyboard(user_id, keyboards.ASSISTANT_ROLES_KEYBOARD)
+
+            else:
+                viber.send_messages(user_id, [TextMessage(text="not supported")])
         else:
-            viber.send_messages(user_id, [TextMessage(text="not supported")])
+            viber.send_messages(user_id, [TextMessage(text=constants.SOMETHING_WENT_WRONG_MESSAGE + constants.API_KEY_REQUEST_MESSAGE)])
+            self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+            self._set_chat_state(user_id, ChatState.MAIN)
 
 
 app = Flask(__name__)
