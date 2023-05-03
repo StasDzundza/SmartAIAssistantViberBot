@@ -60,6 +60,7 @@ HELP_BUTTON = { "ActionType": "reply", "ActionBody": "__help__", "Text": "Help �
 SET_API_KEY_BUTTON = { "ActionType": "reply", "ActionBody": "__set_api_key__", "Text": "Set API Key 🔑" }
 CANCEL_BUTTON = { "ActionType": "reply", "ActionBody": "__cancel__", "Text": "Cancel ❌" }
 START_CHAT_BUTTON = { "ActionType": "reply", "ActionBody": "__start_chat__", "Text": "Start Chat With Assistant 💬" }
+END_CHAT_BUTTON = {"ActionType": "reply", "ActionBody": "__end_chat__", "Text": "End Chat ❌" }
 GENERATE_IMAGE_BUTTON = { "ActionType": "reply", "ActionBody": "__generate_image__", "Text": "Generate Image 🖼️" }
 
 HELP_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
@@ -75,7 +76,7 @@ MAIN_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 MAIN_KEYBOARD[BUTTONS_KEY].extend([START_CHAT_BUTTON, GENERATE_IMAGE_BUTTON, SET_API_KEY_BUTTON])
 
 END_CHAT_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
-END_CHAT_KEYBOARD[BUTTONS_KEY].append({"ActionType": "reply", "ActionBody": "__end_chat__", "Text": "End Chat ❌" })
+END_CHAT_KEYBOARD[BUTTONS_KEY].append(END_CHAT_BUTTON)
 
 ASSISTANT_ROLES_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 ASSISTANT_ROLES_KEYBOARD[BUTTONS_KEY].extend([
