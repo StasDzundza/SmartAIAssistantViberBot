@@ -15,8 +15,10 @@ import keyboards
 
 from OpenAIClients.ChatGPT.chat_gpt_client import ChatGPTClient, TextDavinciClient
 from OpenAIClients.DALLE.dalle_client import DALLEClient, ImageRequestData, ImageSize
+from OpenAIClients.WhisperClient.whisper_client import WhisperClient, get_file_extension
 from DBService.db_service import UserDataDatabaseService
 from chat_state import ChatState
+from utils import download_file, is_media_file
 
 from flask import Flask, request, Response
 from viberbot import Api
@@ -24,7 +26,7 @@ from viberbot.api.bot_configuration import BotConfiguration
 from viberbot.api.messages.text_message import TextMessage
 from viberbot.api.messages.keyboard_message import KeyboardMessage
 from viberbot.api.messages.picture_message import PictureMessage
-from viberbot.api.messages.video_message import VideoMessage
+from viberbot.api.messages.file_message import FileMessage
 from viberbot.api.viber_requests import ViberConversationStartedRequest, ViberFailedRequest, ViberMessageRequest, ViberSubscribedRequest, ViberUnsubscribedRequest
 
 
@@ -97,14 +99,19 @@ class ViberBot:
         logger.error(f"Client failed receiving message. failure: {request}")
 
     def _handle_message_request(self, request: ViberMessageRequest):
-        message = request.message.text
         user_id = request.sender.id
-        logger.info(f'Received message "{message}" from User {user_id}.')
 
-        if message in keyboards.BUTTON_ACTIONS:
-            self._handle_keyboard_button_click(request)
+        if isinstance(request.message, FileMessage):
+            logger.info(f'Received file message from User {user_id}.')
+            self._handle_file_message_request(request)
         else:
-            self._handle_text_message_request(request)
+            message = request.message.text
+            logger.info(f'Received message "{message}" from User {user_id}.')
+
+            if message in keyboards.BUTTON_ACTIONS:
+                self._handle_keyboard_button_click(request)
+            else:
+                self._handle_text_message_request(request)
             
 
     def _handle_text_message_request(self, request: ViberMessageRequest):
@@ -243,6 +250,11 @@ class ViberBot:
                 else:
                     self._handle_text_message_request(request)
 
+            elif message == keyboards.get_button_action(keyboards.TRANSCRIPT_MEDIA_BUTTON):
+                self._send_text_message(user_id, constants.MEDIA_FILE_REQUEST_MESSAGE)
+                self._send_keyboard(user_id, keyboards.CANCEL_KEYBOARD)
+                self._set_chat_state(user_id, ChatState.PROVIDING_MEDIA_FILE)
+
             else:
                 self._send_text_message(user_id, "This feature is not supported yet.")
         else:
@@ -250,6 +262,39 @@ class ViberBot:
             self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
             self._set_chat_state(user_id, ChatState.MAIN)
 
+    def _handle_file_message_request(self, request: ViberMessageRequest):
+        user_id = request.sender.id
+        message = request.message
+        logger.info(f'_handle_file_message_request called for User {user_id}. Received file: {message.file_name} (size: {message.size} bytes) URL: {message.media}')
+
+        api_key = self._get_openai_api_key(user_id)
+        if api_key:
+            chat_state = self._get_chat_state(user_id)
+            if chat_state == ChatState.PROVIDING_MEDIA_FILE:
+                if is_media_file(message.file_name):
+                    file_extension = get_file_extension(message.file_name)[1]
+                    media_filename = f"user_media_{user_id}.{file_extension}"
+                    try:
+                        download_file(message.media, media_filename)
+                        self._send_text_message(user_id, constants.TRANSCRIPTION_IN_PROGRESS_MESSAGE)
+                        transcription = WhisperClient.transcript_media_file(api_key, f"{media_filename}")
+                        if chat_state == ChatState.PROVIDING_MEDIA_FILE:
+                            self._send_text_message(user_id, transcription)
+                    except Exception:
+                        self._send_text_message(user_id, constants.FILE_DOWNLOADING_ERROR)
+
+                    if os.path.exists(media_filename):
+                        os.remove(media_filename)
+
+                    self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+                else:
+                    self._send_text_message(user_id, constants.INCORRECT_FILE_TYPE_MESSAGE)
+                    self._send_keyboard(user_id, keyboards.CANCEL_KEYBOARD)
+        else:
+            self._send_text_message(user_id, constants.SOMETHING_WENT_WRONG_MESSAGE + constants.API_KEY_REQUEST_MESSAGE)
+            self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+
+        self._set_chat_state(user_id, ChatState.MAIN)
 
 app = Flask(__name__)
 viber = Api(BotConfiguration(

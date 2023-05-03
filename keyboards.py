@@ -13,7 +13,7 @@ keyboard_template = {
             "BgMediaType": "picture",    # Possible values: "picture", "gif"; Default: "picture"
             "BgMedia": "http:#path.to/your/image",    # URL of the image or GIF
             "BgMediaScaleType": "fit",    # Possible values: "fit", "crop", "fill"; Default: "fit"
-            "BgLoop": "true",    # Possible values: "true", "false"; Default: "false"
+            "BgLoop": True,    # Possible values: "true", "false"; Default: "false"
             "Image": "http:#path.to/your/button/image",    # URL of the image for the button
             "Text": "Button Text",    # Button text
             "TextVAlign": "middle",    # Possible values: "middle", "top", "bottom"; Default: "middle"
@@ -26,7 +26,7 @@ keyboard_template = {
             "ActionType": "reply",    # Possible values: "reply", "open-url", "location-picker", "share-phone", "none"; Default: "reply"
             "ActionBody": "Action Text",    # Action-specific data
             "ImageScaleType": "fit",    # Possible values: "fit", "crop", "fill"; Default: "fit"
-            "Silent": "true",    # Possible values: "true", "false"; Default: "false"
+            "Silent": True,    # Possible values: "true", "false"; Default: "false"
             "FavIconUrl": "http:#path.to/your/favicon",    # URL of the favicon
             "MapThumbnailUrl": "http:#path.to/your/map/thumbnail",    # URL of the map thumbnail
             "MapScaleType": "fit",    # Possible values: "fit", "crop", "fill"; Default: "fit"
@@ -39,7 +39,7 @@ BUTTONS_KEY = "Buttons"
 ROLE_BUTTON_ACTIONS = ["__chatbot_role__", "__cook_role__", "__doctor_role__", "__professional_sportsmen_role__", "__scientist_role__", "__funny_guy_role__"]
 IMAGE_COUNT_BUTTON_ACTIONS = ["__1__", "__2__", "__3__", "__4__"]
 IMAGE_SIZE_BUTTON_ACTIONS = ["__small__", "__medium__", "__large__"]
-BUTTON_ACTIONS = ["__help__", "__cancel__", "__set_api_key__", "__start_chat__", "__end_chat__", "__generate_image__"] + \
+BUTTON_ACTIONS = ["__help__", "__cancel__", "__set_api_key__", "__start_chat__", "__end_chat__", "__generate_image__", "__transcript_media__"] + \
     ROLE_BUTTON_ACTIONS + IMAGE_COUNT_BUTTON_ACTIONS + IMAGE_SIZE_BUTTON_ACTIONS
 
 def _parse_button_action_body(button_action_body: str) -> str:
@@ -74,6 +74,7 @@ CANCEL_BUTTON = { "ActionType": "reply", "ActionBody": "__cancel__", "Text": "Ca
 START_CHAT_BUTTON = { "ActionType": "reply", "ActionBody": "__start_chat__", "Text": "Start Chat With Assistant 💬" }
 END_CHAT_BUTTON = {"ActionType": "reply", "ActionBody": "__end_chat__", "Text": "End Chat ❌" }
 GENERATE_IMAGE_BUTTON = { "ActionType": "reply", "ActionBody": "__generate_image__", "Text": "Generate Image 🖼️" }
+TRANSCRIPT_MEDIA_BUTTON = { "ActionType": "reply", "ActionBody": "__transcript_media__", "Text": "Transcript Media 🎧" }
 
 HELP_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 HELP_KEYBOARD[BUTTONS_KEY].append(HELP_BUTTON)
@@ -85,7 +86,7 @@ CANCEL_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 CANCEL_KEYBOARD[BUTTONS_KEY].append(CANCEL_BUTTON)
 
 MAIN_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
-MAIN_KEYBOARD[BUTTONS_KEY].extend([START_CHAT_BUTTON, GENERATE_IMAGE_BUTTON, SET_API_KEY_BUTTON])
+MAIN_KEYBOARD[BUTTONS_KEY].extend([START_CHAT_BUTTON, GENERATE_IMAGE_BUTTON, TRANSCRIPT_MEDIA_BUTTON, SET_API_KEY_BUTTON])
 
 END_CHAT_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 END_CHAT_KEYBOARD[BUTTONS_KEY].append(END_CHAT_BUTTON)
