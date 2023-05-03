@@ -64,12 +64,10 @@ class ViberBot:
     def _send_text_message(self, user_id: str, message: str):
         viber.send_messages(user_id, [TextMessage(text=message)])
 
-    def _send_keyboard(self, user_id: str, keyboard: dict, message: str = ''):
+    def _send_keyboard(self, user_id: str, keyboard: dict):
         extended_keyboard = keyboards.append_buttons(keyboard, [keyboards.HELP_BUTTON])
-        text_message = TextMessage(text=message)
         keyboard_message = KeyboardMessage(keyboard=extended_keyboard)
-        messages = [text_message, keyboard_message] if len(message) > 0 else [keyboard_message]
-        viber.send_messages(user_id, messages)
+        viber.send_messages(user_id, [keyboard_message])
 
     def _send_initial_message(self, request: ViberConversationStartedRequest | ViberSubscribedRequest):
         user_id = request.user.id
@@ -81,7 +79,7 @@ class ViberBot:
             reply_message += f" {constants.API_KEY_REQUEST_MESSAGE}"
             keyboard = keyboards.SET_API_KEY_KEYBOARD
 
-        viber.send_messages(user_id, [TextMessage(text=reply_message)])
+        self._send_text_message(user_id, reply_message)
         self._send_keyboard(user_id, keyboard)
 
     def _handle_conversation_started_request(self, request: ViberConversationStartedRequest):
@@ -123,16 +121,16 @@ class ViberBot:
             if api_key:
                 self._send_text_message(user_id, constants.ASSISTANT_IS_ANSWERING_MESSAGE)
                 answer = TextDavinciClient.ask_question(api_key, message)
-                viber.send_messages(user_id, [TextMessage(text=answer)])
+                self._send_text_message(user_id, answer)
                 bot._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
             else:
-                viber.send_messages(user_id, [TextMessage(text=constants.API_KEY_REQUEST_MESSAGE)])
+                self._send_text_message(user_id, constants.API_KEY_REQUEST_MESSAGE)
                 self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
 
         elif chat_state == ChatState.PROVIDING_API_KEY:
             api_key = message
             self._user_data_db.store_api_key(user_id, api_key)
-            viber.send_messages(user_id, [TextMessage(text=constants.API_KEY_SET_SUCCESSFULLY_MESSAGE)])
+            self._send_text_message(user_id, constants.API_KEY_SET_SUCCESSFULLY_MESSAGE)
             self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
             self._set_chat_state(user_id, ChatState.MAIN)
 
@@ -140,7 +138,7 @@ class ViberBot:
             chat_gpt_client = self._chat_gpt_clients[user_id]
             self._send_text_message(user_id, constants.ASSISTANT_IS_ANSWERING_MESSAGE)
             response = chat_gpt_client.ask_chat(message)
-            viber.send_messages(user_id, [TextMessage(text=response)])
+            self._send_text_message(user_id, response)
             self._send_keyboard(user_id, keyboards.END_CHAT_KEYBOARD)
 
         elif chat_state == ChatState.PROVIDING_IMAGES_DESCRIPTION:
@@ -150,7 +148,7 @@ class ViberBot:
             self._set_chat_state(user_id, ChatState.SELECTING_IMAGES_COUNT)
 
         else:
-            viber.send_messages(user_id, [TextMessage(text=constants.HELP_MESSAGE)])
+            self._send_text_message(user_id, constants.HELP_MESSAGE)
             self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
 
     def _handle_keyboard_button_click(self, request: ViberMessageRequest):
@@ -161,7 +159,7 @@ class ViberBot:
         api_key = self._get_openai_api_key(user_id)
 
         if message == keyboards.get_button_action(keyboards.HELP_BUTTON):
-            viber.send_messages(user_id, [TextMessage(text=constants.HELP_MESSAGE)])
+            self._send_text_message(user_id, constants.HELP_MESSAGE)
             if api_key:
                 self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
             else:
@@ -176,7 +174,7 @@ class ViberBot:
             self._set_chat_state(user_id, ChatState.MAIN)
 
         elif message == keyboards.get_button_action(keyboards.SET_API_KEY_BUTTON):
-            viber.send_messages(user_id, [TextMessage(text=constants.PLEASE_SEND_API_KEY_MESSAGE)])
+            self._send_text_message(user_id, constants.PLEASE_SEND_API_KEY_MESSAGE)
             self._send_keyboard(user_id, keyboards.CANCEL_KEYBOARD)
             self._set_chat_state(user_id, ChatState.PROVIDING_API_KEY)
 
@@ -184,7 +182,7 @@ class ViberBot:
             chat_state = self._get_chat_state(user_id)
 
             if message == keyboards.get_button_action(keyboards.START_CHAT_BUTTON):
-                viber.send_messages(user_id, [TextMessage(text=constants.ASSISTANT_ROLE_REQUEST_MESSAGE)])
+                self._send_text_message(user_id, constants.ASSISTANT_ROLE_REQUEST_MESSAGE)
                 self._send_keyboard(user_id, keyboards.ASSISTANT_ROLES_KEYBOARD)
                 self._set_chat_state(user_id, ChatState.SELECTING_ASSISTANT_ROLE)
 
@@ -193,7 +191,7 @@ class ViberBot:
                     assistant_role = keyboards.parse_assistant_role(message)
                     chat_gpt_client = ChatGPTClient(api_key, assistant_role)
                     self._chat_gpt_clients[user_id] = chat_gpt_client
-                    viber.send_messages(user_id, [TextMessage(text=constants.CHAT_STARTED_MESSAGE)])
+                    self._send_text_message(user_id, constants.CHAT_STARTED_MESSAGE)
                     self._send_keyboard(user_id, keyboards.END_CHAT_KEYBOARD)
                     self._set_chat_state(user_id, ChatState.HAVING_CONVERSATION_WITH_ASSISTANT)
                 else:
@@ -203,7 +201,7 @@ class ViberBot:
                 if chat_state == ChatState.HAVING_CONVERSATION_WITH_ASSISTANT:
                     if user_id in self._chat_gpt_clients:
                         del self._chat_gpt_clients[user_id]
-                    viber.send_messages(user_id, [TextMessage(text=constants.CHAT_ENDED_MESSAGE)])
+                    self._send_text_message(user_id, constants.CHAT_ENDED_MESSAGE)
                     self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
                     self._set_chat_state(user_id, ChatState.MAIN)
                 else:
@@ -248,7 +246,7 @@ class ViberBot:
             else:
                 self._send_text_message(user_id, "This feature is not supported yet.")
         else:
-            viber.send_messages(user_id, [TextMessage(text=constants.SOMETHING_WENT_WRONG_MESSAGE + constants.API_KEY_REQUEST_MESSAGE)])
+            self._send_text_message(user_id, constants.SOMETHING_WENT_WRONG_MESSAGE + constants.API_KEY_REQUEST_MESSAGE)
             self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
             self._set_chat_state(user_id, ChatState.MAIN)
 

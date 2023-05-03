@@ -18,7 +18,7 @@ CHAT_ENDED_MESSAGE = "Chat with your assistant has been ended. It was a pleasure
 IMAGE_DESCRIPTION_REQUEST_MESSAGE = "Please provide description of image which you want to generate."
 IMAGE_COUNT_REQUEST_MESSAGE = "How much images do you want to generate?"
 IMAGE_SIZE_REQUEST_MESSAGE = "Please select images size."
-IMAGE_GENERATION_IN_PROGRESS_MESSAGE = "Imags are generating at the moment. Please wait..."
+IMAGE_GENERATION_IN_PROGRESS_MESSAGE = "Images are generating at the moment. Please wait..."
 HERE_ARE_YOUR_IMAGES_MESSAGE = "Here are your images 😊"
 # Media file transcription
 TRANSCRIPT_MEDIA_HELP = "If you want transcript some media file or voice message than use `Transcript Media` menu button and provide bot with voice message, audio or video file."
