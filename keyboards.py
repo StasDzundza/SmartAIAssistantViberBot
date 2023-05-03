@@ -104,10 +104,10 @@ ASSISTANT_ROLES_KEYBOARD[BUTTONS_KEY].extend([
 
 IMAGE_COUNT_KEYBOARD = copy.deepcopy(EMPTY_KEYBOARD)
 IMAGE_COUNT_KEYBOARD[BUTTONS_KEY].extend([
-    { "ActionType": "reply", "ActionBody": "__1__", "Text": "1️⃣" },
-    { "ActionType": "reply", "ActionBody": "__2__", "Text": "2️⃣" },
-    { "ActionType": "reply", "ActionBody": "__3__", "Text": "3️⃣" },
-    { "ActionType": "reply", "ActionBody": "__4__", "Text": "4️⃣" },
+    { "Columns": 3, "Rows": 1, "ActionType": "reply", "ActionBody": "__1__", "Text": "1️⃣" },
+    { "Columns": 3, "Rows": 1, "ActionType": "reply", "ActionBody": "__2__", "Text": "2️⃣" },
+    { "Columns": 3, "Rows": 1, "ActionType": "reply", "ActionBody": "__3__", "Text": "3️⃣" },
+    { "Columns": 3, "Rows": 1, "ActionType": "reply", "ActionBody": "__4__", "Text": "4️⃣" },
     CANCEL_BUTTON
 ])
 

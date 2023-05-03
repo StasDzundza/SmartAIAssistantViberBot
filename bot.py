@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 import os
 import constants
 import keyboards
+import json
 
 from OpenAIClients.ChatGPT.chat_gpt_client import ChatGPTClient, TextDavinciClient
 from OpenAIClients.DALLE.dalle_client import DALLEClient, ImageRequestData, ImageSize
@@ -70,6 +71,7 @@ class ViberBot:
         extended_keyboard = keyboards.append_buttons(keyboard, [keyboards.HELP_BUTTON])
         keyboard_message = KeyboardMessage(keyboard=extended_keyboard)
         viber.send_messages(user_id, [keyboard_message])
+        self._user_data_db.set_last_keyboard(user_id, json.dumps(keyboard))
 
     def _send_initial_message(self, request: ViberConversationStartedRequest | ViberSubscribedRequest):
         user_id = request.user.id
@@ -167,10 +169,17 @@ class ViberBot:
 
         if message == keyboards.get_button_action(keyboards.HELP_BUTTON):
             self._send_text_message(user_id, constants.HELP_MESSAGE)
-            if api_key:
-                self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+            # return previous keyboard to user
+            last_user_keyboard_data = self._user_data_db.get_last_keyboard(user_id)
+            if last_user_keyboard_data:
+                keyboard = json.loads(last_user_keyboard_data)
+                self._send_keyboard(user_id, keyboard)
             else:
-                self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+                if api_key:
+                    self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+                else:
+                    self._send_keyboard(user_id, keyboards.SET_API_KEY_KEYBOARD)
+                self._set_chat_state(user_id, ChatState.MAIN)
 
         elif message == keyboards.get_button_action(keyboards.CANCEL_BUTTON):
             self._set_chat_state(user_id, ChatState.MAIN)

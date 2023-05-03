@@ -18,7 +18,8 @@ class UserDataDatabaseService:
                 api_key TEXT DEFAULT NULL,
                 chat_state INTEGER DEFAULT 1,
                 img_description TEXT DEFAULT 'Empty',
-                img_count INTEGER DEFAULT 1
+                img_count INTEGER DEFAULT 1,
+                last_keyboard TEXT DEFAULT NULL
             )
             """
         )
@@ -36,7 +37,6 @@ class UserDataDatabaseService:
     def get_api_key(self, user_id: str) -> str:
         self._add_user_if_not_exists(user_id)
         encrypted_api_key = self._get_table_field(user_id, 'api_key')
-        print(f"encrypted_api_key = {encrypted_api_key}")
         if encrypted_api_key:
             decrypted_api_key = self._fernet.decrypt(encrypted_api_key.encode()).decode()
             return decrypted_api_key
@@ -64,6 +64,12 @@ class UserDataDatabaseService:
     
     def set_img_count(self, user_id: str, img_count: int):
         self._set_table_field(user_id, 'img_count', img_count)
+
+    def get_last_keyboard(self, user_id: str) -> str | None:
+        return self._get_table_field(user_id, 'last_keyboard')
+
+    def set_last_keyboard(self, user_id: str, last_keyboard_json: str):
+        self._set_table_field(user_id, 'last_keyboard', last_keyboard_json)
 
     def _get_table_field(self, user_id: str, field: str):
         self._add_user_if_not_exists(user_id)
