@@ -47,7 +47,7 @@ def append_buttons(keyboard: dict, buttons: list[dict]) -> dict:
     extended_keyboard[BUTTONS_KEY].extend(buttons)
     return extended_keyboard
 
-def get_button_action(button: dict):
+def get_button_action(button: dict) -> str:
     return button["ActionBody"]
 
 EMPTY_KEYBOARD = {
