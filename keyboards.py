@@ -38,9 +38,21 @@ keyboard_template = {
 BUTTONS_KEY = "Buttons"
 ROLE_BUTTON_ACTIONS = ["__chatbot_role__", "__cook_role__", "__doctor_role__", "__professional_sportsmen_role__", "__scientist_role__", "__funny_guy_role__"]
 IMAGE_COUNT_BUTTON_ACTIONS = ["__1__", "__2__", "__3__", "__4__"]
-IMAGE_COUNT_BUTTON_ACTIONS = ["__small__", "__medium__", "__large__"]
+IMAGE_SIZE_BUTTON_ACTIONS = ["__small__", "__medium__", "__large__"]
 BUTTON_ACTIONS = ["__help__", "__cancel__", "__set_api_key__", "__start_chat__", "__end_chat__", "__generate_image__"] + \
-    ROLE_BUTTON_ACTIONS + IMAGE_COUNT_BUTTON_ACTIONS + IMAGE_COUNT_BUTTON_ACTIONS
+    ROLE_BUTTON_ACTIONS + IMAGE_COUNT_BUTTON_ACTIONS + IMAGE_SIZE_BUTTON_ACTIONS
+
+def _parse_button_action_body(button_action_body: str) -> str:
+    return button_action_body.split("__")[1]
+
+def parse_assistant_role(button_action_body: str) -> str:
+    return _parse_button_action_body(button_action_body).replace("_role", '').replace("_", " ")
+
+def parse_images_count(button_action_body: str) -> int:
+    return int(_parse_button_action_body(button_action_body))
+
+def parse_images_size(button_action_body: str) -> str:
+    return _parse_button_action_body(button_action_body)
 
 def append_buttons(keyboard: dict, buttons: list[dict]) -> dict:
     extended_keyboard = copy.deepcopy(keyboard)

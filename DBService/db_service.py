@@ -36,10 +36,9 @@ class UserDataDatabaseService:
     def get_api_key(self, user_id: str) -> str:
         self._add_user_if_not_exists(user_id)
         encrypted_api_key = self._get_table_field(user_id, 'api_key')
-        print("encrypted_api_key received: ")
-        print(encrypted_api_key)
-        if encrypted_api_key and encrypted_api_key[0]:
-            decrypted_api_key = self._fernet.decrypt(encrypted_api_key[0].encode()).decode()
+        print(f"encrypted_api_key = {encrypted_api_key}")
+        if encrypted_api_key:
+            decrypted_api_key = self._fernet.decrypt(encrypted_api_key.encode()).decode()
             return decrypted_api_key
         else:
             return None
@@ -75,7 +74,7 @@ class UserDataDatabaseService:
         field_data = cursor.fetchone()
         connection.close()
 
-        return field_data
+        return field_data[0]
 
     def _set_table_field(self, user_id: str, field: str, value):
         self._add_user_if_not_exists(user_id)

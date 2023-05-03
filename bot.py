@@ -21,9 +21,10 @@ from chat_state import ChatState
 from flask import Flask, request, Response
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
-from viberbot.api.messages import VideoMessage
 from viberbot.api.messages.text_message import TextMessage
 from viberbot.api.messages.keyboard_message import KeyboardMessage
+from viberbot.api.messages.picture_message import PictureMessage
+from viberbot.api.messages.video_message import VideoMessage
 from viberbot.api.viber_requests import ViberConversationStartedRequest, ViberFailedRequest, ViberMessageRequest, ViberSubscribedRequest, ViberUnsubscribedRequest
 
 
@@ -40,14 +41,11 @@ class ViberBot:
         return ChatState(chat_state_value)
     
     def _set_chat_state(self, user_id: str, chat_state: ChatState):
-        self._user_data_db.set_chat_state(user_id, chat_state.value[0])
+        self._user_data_db.set_chat_state(user_id, chat_state.value)
 
     def _get_openai_api_key(self, user_id: str) -> str | None:
         api_key = self._user_data_db.get_api_key(user_id)
         return api_key.strip() if api_key else None
-    
-    def _parse_assistant_role(self, button_action_body: str) -> str:
-        return button_action_body.split("__")[1].replace("_role", '').replace("_", " ")
 
     def handle_request(self, request_data: bytes):
         viber_request = viber.parse_request(request_data)
@@ -146,7 +144,10 @@ class ViberBot:
             self._send_keyboard(user_id, keyboards.END_CHAT_KEYBOARD)
 
         elif chat_state == ChatState.PROVIDING_IMAGES_DESCRIPTION:
-            pass
+            self._user_data_db.set_img_description(user_id, message)
+            self._send_text_message(user_id, constants.IMAGE_COUNT_REQUEST_MESSAGE)
+            self._send_keyboard(user_id, keyboards.IMAGE_COUNT_KEYBOARD)
+            self._set_chat_state(user_id, ChatState.SELECTING_IMAGES_COUNT)
 
         else:
             viber.send_messages(user_id, [TextMessage(text=constants.HELP_MESSAGE)])
@@ -189,7 +190,7 @@ class ViberBot:
 
             elif message in keyboards.ROLE_BUTTON_ACTIONS :
                 if chat_state == ChatState.SELECTING_ASSISTANT_ROLE:
-                    assistant_role = self._parse_assistant_role(message)
+                    assistant_role = keyboards.parse_assistant_role(message)
                     chat_gpt_client = ChatGPTClient(api_key, assistant_role)
                     self._chat_gpt_clients[user_id] = chat_gpt_client
                     viber.send_messages(user_id, [TextMessage(text=constants.CHAT_STARTED_MESSAGE)])
@@ -205,6 +206,42 @@ class ViberBot:
                     viber.send_messages(user_id, [TextMessage(text=constants.CHAT_ENDED_MESSAGE)])
                     self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
                     self._set_chat_state(user_id, ChatState.MAIN)
+                else:
+                    self._handle_text_message_request(request)
+
+            elif message == keyboards.get_button_action(keyboards.GENERATE_IMAGE_BUTTON):
+                self._send_text_message(user_id, constants.IMAGE_DESCRIPTION_REQUEST_MESSAGE)
+                self._send_keyboard(user_id, keyboards.CANCEL_KEYBOARD)
+                self._set_chat_state(user_id, ChatState.PROVIDING_IMAGES_DESCRIPTION)
+
+            elif message in keyboards.IMAGE_COUNT_BUTTON_ACTIONS:
+                if chat_state == ChatState.SELECTING_IMAGES_COUNT:
+                    images_count = keyboards.parse_images_count(message)
+                    self._user_data_db.set_img_count(user_id, images_count)
+                    self._send_text_message(user_id, constants.IMAGE_SIZE_REQUEST_MESSAGE)
+                    self._send_keyboard(user_id, keyboards.IMAGE_SIZE_KEYBOARD)
+                    self._set_chat_state(user_id, ChatState.SELECTING_IMAGES_SIZE)
+                else:
+                    self._handle_text_message_request(request)
+
+            elif message in keyboards.IMAGE_SIZE_BUTTON_ACTIONS:
+                if chat_state == ChatState.SELECTING_IMAGES_SIZE:
+                    size = ImageSize[keyboards.parse_images_size(message).upper()]
+                    count = self._user_data_db.get_img_count(user_id)
+                    description = self._user_data_db.get_img_description(user_id)
+
+                    self._send_text_message(user_id, constants.IMAGE_GENERATION_IN_PROGRESS_MESSAGE)
+                    images_data = ImageRequestData(description, count, size)
+                    image_urls = DALLEClient.generate_images(api_key, images_data)
+                    if image_urls:
+                        image_messages = [PictureMessage(media=url) for url in image_urls]
+                        viber.send_messages(user_id, image_messages)
+                        self._send_text_message(user_id, constants.HERE_ARE_YOUR_IMAGES_MESSAGE)
+                        self._set_chat_state(user_id, ChatState.MAIN)
+                        self._send_keyboard(user_id, keyboards.MAIN_KEYBOARD)
+                    else:
+                        self._send_text_message(user_id, constants.SOMETHING_WENT_WRONG_MESSAGE)
+                        self._send_keyboard(user_id, keyboards.IMAGE_SIZE_KEYBOARD)
                 else:
                     self._handle_text_message_request(request)
 

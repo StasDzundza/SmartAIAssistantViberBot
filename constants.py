@@ -2,13 +2,6 @@
 VIBER_BOT_TOKEN_ENV = "VIBER_BOT_TOKEN"
 API_KEYS_DB_ENCRYPTION_KEY_ENV = "API_KEYS_DB_ENCRYPTION_KEY"
 
-# User and chat data field keys
-API_KEY_FIELD = "api_key"
-CHAT_STATE_FIELD = "chat_state"
-IMAGES_DESCRIPTION_KEY = "img_description"
-IMAGES_COUNT_KEY = "img_count"
-CHAT_CLIENT = "chat_client"
-
 # Predefinded messages
 BOT_MENU_HELP_MESSAGE = "For more details see Help section."
 WELCOME_USER_MESSAGE = "Welcome to the Smart Assistant Viber bot! Ask me something or go to menu in order to use extended list of features. " + BOT_MENU_HELP_MESSAGE
@@ -25,8 +18,7 @@ CHAT_ENDED_MESSAGE = "Chat with your assistant has been ended. It was a pleasure
 IMAGE_DESCRIPTION_REQUEST_MESSAGE = "Please provide description of image which you want to generate."
 IMAGE_COUNT_REQUEST_MESSAGE = "How much images do you want to generate?"
 IMAGE_SIZE_REQUEST_MESSAGE = "Please select images size."
-IMAGE_GENERATION_IN_PROGRESS_MESSAGE = "Image is generating at the moment. Please wait..."
-IMAGE_SIZE_FORMAT_IS_INCORRECT_MESSAGE = "Entered image size format is incorrect."
+IMAGE_GENERATION_IN_PROGRESS_MESSAGE = "Imags are generating at the moment. Please wait..."
 HERE_ARE_YOUR_IMAGES_MESSAGE = "Here are your images 😊"
 # Media file transcription
 TRANSCRIPT_MEDIA_HELP = "If you want transcript some media file or voice message than use `Transcript Media` menu button and provide bot with voice message, audio or video file."
@@ -44,7 +36,6 @@ If you already have an API key that provide bot with it using `Set API Key` menu
     - Image generation by description
     - Audio transcription
 3. You can communicate with your assistant in 2 ways. First way is very simple - just write some message to the bot and he will answer. But if you want bot to remember message history and have longer full-fledged conversation than use `Start Chat With Assistant` button and follow instructions.
-Worth noting that you are able to communicate with your assistant with the help of voice messages. Just send it to you assistant and he will reply (Note that communication via voice messages works a little longer then via text messages).
 4. Use `Generate Image` menu button in order to generate image or some images by description. Feel free to describe as much details of desired image as you want.
 5. If you want transcript some media file or voice message than use `Transcript Media` menu button and provide bot with voice message, audio or video file.
 '''
